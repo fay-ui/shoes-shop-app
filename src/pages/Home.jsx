@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 
-const Home = ()=>{
+const Home = () => {
   const [shoes, setShoes] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
@@ -13,58 +12,139 @@ const Home = ()=>{
     description: '',
     imageUrl: '',
   });
+  const [editingShoeId, setEditingShoeId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState(''); 
 
-  
+  // Fetch shoes on component mount
   useEffect(() => {
-    fetch('http://localhost:3002/shoes')
+    fetch('http://localhost:3000/shoes')
       .then((response) => response.json())
       .then((data) => setShoes(data))
       .catch((error) => console.error('Error fetching shoes:', error));
   }, []);
 
-
+  // Handle form input change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle form submit (Add or Update)
   const handleSubmit = (e) => {
     e.preventDefault();
-    fetch('http://localhost:3002/shoes', {
-      method: 'POST',
+    if (editingShoeId) {
+      // Update existing shoe
+      fetch(`http://localhost:3000/shoes/${editingShoeId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+        .then((response) => response.json())
+        .then((updatedShoe) => {
+          setShoes(shoes.map((shoe) => (shoe.id === updatedShoe.id ? updatedShoe : shoe)));
+          resetForm();
+        })
+        .catch((error) => console.error('Error updating shoe:', error));
+    } else {
+      // Add new shoe
+      fetch('http://localhost:3000/shoes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+        .then((response) => response.json())
+        .then((newShoe) => {
+          setShoes([...shoes, newShoe]);
+          resetForm();
+        })
+        .catch((error) => console.error('Error adding shoe:', error));
+    }
+  };
+
+  // Handle delete button click
+  const handleDelete = (id) => {
+    fetch(`http://localhost:3000/shoes/${id}`, { method: 'DELETE' })
+      .then(() => setShoes(shoes.filter((shoe) => shoe.id !== id)))
+      .catch((error) => console.error('Error deleting shoe:', error));
+  };
+
+  // Reset the form
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      brand: '',
+      size: '',
+      color: '',
+      price: '',
+      stock: '',
+      description: '',
+      imageUrl: '',
+    });
+    setEditingShoeId(null);
+  };
+
+  // Handle editing a shoe
+  const handleEdit = (shoe) => {
+    setFormData({
+      name: shoe.name,
+      brand: shoe.brand,
+      size: shoe.size,
+      color: shoe.color,
+      price: shoe.price,
+      stock: shoe.stock,
+      description: shoe.description,
+      imageUrl: shoe.imageUrl,
+    });
+    setEditingShoeId(shoe.id);
+  };
+
+  // Handle search term input change
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  // Filter shoes based on the search term
+  const filteredShoes = shoes.filter((shoe) =>
+    shoe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    shoe.brand.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Handle "Mark as Sold" button click (update stock to 0)
+  const handleMarkAsSold = (id) => {
+    fetch(`http://localhost:3000/shoes/${id}`, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify({ stock: 0 }),
     })
       .then((response) => response.json())
-      .then((newShoe) => {
-        setShoes([...shoes, newShoe]);
-        setFormData({
-          name: '',
-          brand: '',
-          size: '',
-          color: '',
-          price: '',
-          stock: '',
-          description: '',
-          imageUrl: '',
-        });
+      .then((updatedShoe) => {
+        setShoes(shoes.map((shoe) => (shoe.id === updatedShoe.id ? updatedShoe : shoe)));
       })
-      .catch((error) => console.error('Error adding shoe:', error));
-  };
-
-  
-  const handleDelete = (id) => {
-    fetch(`http://localhost:3002/shoes/${id}`, { method: 'DELETE' })
-      .then(() => setShoes(shoes.filter((shoe) => shoe.id !== id)))
-      .catch((error) => console.error('Error deleting shoe:', error));
+      .catch((error) => console.error('Error marking shoe as sold:', error));
   };
 
   return (
     <div className="shoe-list">
       <h2>Shoe Collection</h2>
 
+      {/* Search Bar */}
+      <div>
+        <input
+          type="text"
+          placeholder="Search shoes..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+        />
+        <button onClick={() => setSearchTerm('')}>Clear Search</button>
+      </div>
+
+      {/* Shoe Form */}
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -122,32 +202,30 @@ const Home = ()=>{
           value={formData.imageUrl}
           onChange={handleInputChange}
         />
-        <button type="submit">Add Shoe</button>
+        <button type="submit">{editingShoeId ? 'Update Shoe' : 'Add Shoe'}</button>
       </form>
 
-      
+      {/* Shoe Items */}
       <div className="shoe-items">
-        {shoes.map((shoe) => (
+        {filteredShoes.map((shoe) => (
           <div key={shoe.id} className="shoe-item">
             <h3>{shoe.name}</h3>
             <img
-            
-            src={shoe.imageUrl} 
-            alt={shoe.name}
-            style={{ width: '200px', height: 'auto' }}
-          />
-          
-            
+              src={shoe.imageUrl}
+              alt={shoe.name}
+              style={{ width: '200px', height: 'auto' }}
+            />
             <p>{shoe.description}</p>
             <p>Price: ${shoe.price}</p>
             <p>Stock: {shoe.stock}</p>
             <button onClick={() => handleDelete(shoe.id)}>Delete</button>
+            <button onClick={() => handleEdit(shoe)}>Edit</button>
+            <button onClick={() => handleMarkAsSold(shoe.id)}>Mark as Sold</button>
           </div>
         ))}
       </div>
     </div>
   );
 };
-
 
 export default Home;
