@@ -17,7 +17,7 @@ const Home = () => {
 
   // Fetch shoes on component mount
   useEffect(() => {
-    fetch('http://localhost:3000/shoes')
+    fetch('https://shoes-shop-app.onrender.com/shoes')
       .then((response) => response.json())
       .then((data) => setShoes(data))
       .catch((error) => console.error('Error fetching shoes:', error));
@@ -34,7 +34,7 @@ const Home = () => {
     e.preventDefault();
     if (editingShoeId) {
       // Update existing shoe
-      fetch(`http://localhost:3000/shoes/${editingShoeId}`, {
+      fetch(`https://shoes-shop-app.onrender.com/shoes/${editingShoeId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -49,7 +49,7 @@ const Home = () => {
         .catch((error) => console.error('Error updating shoe:', error));
     } else {
       // Add new shoe
-      fetch('http://localhost:3000/shoes', {
+      fetch('https://shoes-shop-app.onrender.com/shoes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ const Home = () => {
 
   // Handle delete button click
   const handleDelete = (id) => {
-    fetch(`http://localhost:3000/shoes/${id}`, { method: 'DELETE' })
+    fetch(`https://shoes-shop-app.onrender.com/${id}`, { method: 'DELETE' })
       .then(() => setShoes(shoes.filter((shoe) => shoe.id !== id)))
       .catch((error) => console.error('Error deleting shoe:', error));
   };
@@ -115,7 +115,7 @@ const Home = () => {
 
   // Handle "Mark as Sold" button click (update stock to 0)
   const handleMarkAsSold = (id) => {
-    fetch(`http://localhost:3000/shoes/${id}`, {
+    fetch(`https://shoes-shop-app.onrender.com/shoes/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
